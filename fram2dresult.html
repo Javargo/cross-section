@@ -1,0 +1,337 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+		<title>Cross Section Library</title>
+		<script src="TwoDGeometry.js" type="text/javascript"></script>
+		<script src="DrawingLib.js" type="text/javascript"></script>
+		<script src="result.js" type="text/javascript"></script>
+		<script>
+		var Frame2DResult=function()
+		{
+			return this;
+		};
+		
+		Frame2DResult.prototype.rodStyle=
+		{
+			stroke: "#000000", 
+			stroke_width: 2,
+			fill: "#ffffff"
+		};
+		
+		Frame2DResult.prototype.graphStyle=
+		{
+			stroke: "#000000", 
+			stroke_width: 1,
+			fill: "none"
+		};
+		
+		Frame2DResult.prototype.nodeStyle=
+		{
+			stroke: "none", 
+			stroke_width: "4",
+			fill: "#000000"
+		};
+		
+		Frame2DResult.prototype.textStyle1=
+		{
+			stroke: "none", 
+			fill: "#ffffff",
+			font_size: "10",
+			font_family: "sans-serif",
+			text_anchor: "middle",
+			dominant_baseline: "central"
+		};
+		
+		Frame2DResult.prototype.textStyle2=
+		{
+			stroke: "none", 
+			fill: "#000000",
+			font_size: "10",
+			font_family: "sans-serif",
+			text_anchor: "middle",
+		};
+		
+		Frame2DResult.prototype.nodeCircleRadius=0.05;
+		
+		/*Frame2DResult.prototype.setup=function()
+		{
+			for(var i=0; i<this.nodes.length; i++)
+			{
+				Object.setPrototypeOf(this.nodes[i], TwoDGeometry.Vector.prototype);
+			}
+		}*/
+		
+		Frame2DResult.prototype.getNodeAsVector=function(i)
+		{
+			return new TwoDGeometry.Vector(this.nodes[i].x, this.nodes[i].y);
+		};
+		
+		Frame2DResult.prototype.getDisplacementAsVector=function(i)
+		{
+			return new TwoDGeometry.Vector(this.displacements[i].dx, this.displacements[i].dy);
+		};
+		
+		Frame2DResult.prototype.getSystemOverview=function()
+		{
+			var dr=new DrawingLib.SVGDrawing();
+			//rods
+			for(var i=0; i<this.rods.length; i++)
+			{
+				var p0=this.getNodeAsVector(this.rods[i].lower_node_index);
+				var p1=this.getNodeAsVector(this.rods[i].higher_node_index);
+				dr.add(new DrawingLib.PrimitiveLine(p0, p1, this.rodStyle));
+				var t=p1.copy().minusThis(p0).unitVector().multiplyThis(1.35*this.nodeCircleRadius);
+				dr.add(new DrawingLib.PrimitiveCircle(p0.copy().plusThis(t), 0.35*this.nodeCircleRadius, this.rodStyle));
+				dr.add(new DrawingLib.PrimitiveCircle(p1.copy().minusThis(t), 0.35*this.nodeCircleRadius, this.rodStyle));
+			}
+			dr.scaleContentToBox();
+			//itt meg kellene határozni az optimális szöveg méretet
+			//rod numbers
+			for(var i=0; i<this.rods.length; i++)
+			{
+				var p0=this.getNodeAsVector(this.rods[i].lower_node_index);
+				var p1=this.getNodeAsVector(this.rods[i].higher_node_index);
+				var angle=p1.minusNew(p0).getAngle();
+				angle=angle>Math.PI?angle-Math.PI:angle;
+				dr.add(new DrawingLib.PrimitiveText(p0.plusNew(p1).multiplyNew(0.5), angle, i, this.textStyle2));
+			}
+			for(var i=0; i<this.nodes.length; i++)
+			{
+				dr.add(new DrawingLib.PrimitiveCircle(this.getNodeAsVector(i), this.nodeCircleRadius, this.nodeStyle));
+			}
+			for(var i=0; i<this.nodes.length; i++)
+			{
+				dr.add(new DrawingLib.PrimitiveText(this.getNodeAsVector(i), 0, i, this.textStyle1));
+			}
+			//supports	
+			//hinge support	
+			var hingeSupportSymbol=new DrawingLib.DrawingFragment();
+			var sp=new DrawingLib.PrimitivePolygon(this.nodeStyle);
+			sp.addVertex(new TwoDGeometry.Vector(-1.5, 0));
+			sp.addVertex(new TwoDGeometry.Vector(-3.7, 1));
+			sp.addVertex(new TwoDGeometry.Vector(-3.7, -1));
+			hingeSupportSymbol.add(sp);
+			hingeSupportSymbol.add(new DrawingLib.PrimitiveCircle(new TwoDGeometry.Vector(-1.35, 0), 0.35, this.rodStyle));
+			hingeSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, 1.5), new TwoDGeometry.Vector(-3.7, -1.5), this.rodStyle));
+			hingeSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, 1.5), new TwoDGeometry.Vector(-4.2, 1.0), this.rodStyle));
+			hingeSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, 1.0), new TwoDGeometry.Vector(-4.2, 0.5), this.rodStyle));
+			hingeSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, 0.5), new TwoDGeometry.Vector(-4.2, 0.0), this.rodStyle));
+			hingeSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, 0.0), new TwoDGeometry.Vector(-4.2, -0.5), this.rodStyle));
+			hingeSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, -0.5), new TwoDGeometry.Vector(-4.2, -1.0), this.rodStyle));
+			hingeSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, -1.0), new TwoDGeometry.Vector(-4.2, -1.5), this.rodStyle));
+			//roller support	
+			var rollerSupportSymbol=new DrawingLib.DrawingFragment();
+			var sp=new DrawingLib.PrimitivePolygon(this.nodeStyle);
+			sp.addVertex(new TwoDGeometry.Vector(-1.5, 0));
+			sp.addVertex(new TwoDGeometry.Vector(-3.0, 1));
+			sp.addVertex(new TwoDGeometry.Vector(-3.0, -1));
+			rollerSupportSymbol.add(sp);
+			rollerSupportSymbol.add(new DrawingLib.PrimitiveCircle(new TwoDGeometry.Vector(-1.35, 0), 0.35, this.rodStyle));
+			rollerSupportSymbol.add(new DrawingLib.PrimitiveCircle(new TwoDGeometry.Vector(-3.35, 0.6), 0.35, this.rodStyle));
+			rollerSupportSymbol.add(new DrawingLib.PrimitiveCircle(new TwoDGeometry.Vector(-3.35, -0.6), 0.35, this.rodStyle));
+			rollerSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, 1.5), new TwoDGeometry.Vector(-3.7, -1.5), this.rodStyle));
+			rollerSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, 1.5), new TwoDGeometry.Vector(-4.2, 1.0), this.rodStyle));
+			rollerSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, 1.0), new TwoDGeometry.Vector(-4.2, 0.5), this.rodStyle));
+			rollerSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, 0.5), new TwoDGeometry.Vector(-4.2, 0.0), this.rodStyle));
+			rollerSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, 0.0), new TwoDGeometry.Vector(-4.2, -0.5), this.rodStyle));
+			rollerSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, -0.5), new TwoDGeometry.Vector(-4.2, -1.0), this.rodStyle));
+			rollerSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-3.7, -1.0), new TwoDGeometry.Vector(-4.2, -1.5), this.rodStyle));
+			//fix support	
+			var fixSupportSymbol=new DrawingLib.DrawingFragment();
+			fixSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-1, 1.5), new TwoDGeometry.Vector(-1, -1.5), this.rodStyle));
+			fixSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-1, 1.5), new TwoDGeometry.Vector(-1.5, 1.0), this.rodStyle));
+			fixSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-1, 1.0), new TwoDGeometry.Vector(-1.5, 0.5), this.rodStyle));
+			fixSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-1, 0.5), new TwoDGeometry.Vector(-1.5, 0.0), this.rodStyle));
+			fixSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-1, 0.0), new TwoDGeometry.Vector(-1.5, -0.5), this.rodStyle));
+			fixSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-1, -0.5), new TwoDGeometry.Vector(-1.5, -1.0), this.rodStyle));
+			fixSupportSymbol.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-1, -1.0), new TwoDGeometry.Vector(-1.5, -1.5), this.rodStyle));
+			
+			for(var i=0; i<this.supports.length; i++)
+			{
+				var alpha=this.supports[i].rot;
+				var c=fixSupportSymbol.copy().multiplyThis(this.nodeCircleRadius);
+				c.rotateThis(new TwoDGeometry.Vector(Math.cos(alpha), Math.sin(alpha)));
+				c.plusThis(this.getNodeAsVector(this.supports[i].node_index));
+				dr.add(c);
+			}
+			return dr;
+		};
+		
+		Frame2DResult.prototype.getBendingMomentGraph=function()
+		{
+			var gScale=0.03;
+			var hairDistance=0.05;
+			var dr=new DrawingLib.SVGDrawing();
+			//rods
+			for(var i=0; i<this.rods.length; i++)
+			{
+				var p0=this.getNodeAsVector(this.rods[i].lower_node_index);
+				var p1=this.getNodeAsVector(this.rods[i].higher_node_index);
+				dr.add(new DrawingLib.PrimitiveLine(p0, p1, this.rodStyle));
+			}
+			dr.scaleContentToBox();
+			for(var i=0; i<this.rods.length; i++)
+			{
+				var p0=this.getNodeAsVector(this.rods[i].lower_node_index);
+				var p1=this.getNodeAsVector(this.rods[i].higher_node_index);
+				var perp=p1.minusNew(p0).rotateNew(new TwoDGeometry.Vector(0, 1)).unitVector();
+				var l=p1.minusNew(p0).getLength();
+				var n=Math.ceil(l/hairDistance);
+				for(var j=1; j<n; j++)
+				{
+					var v=this.internal_forces[i].M0+(this.internal_forces[i].M1-this.internal_forces[i].M0)*j/n;
+					var pj=p0.plusNew(p1.minusNew(p0).multiplyNew(j/n));
+					dr.add(new DrawingLib.PrimitiveLine(pj, pj.plusNew(perp.multiplyNew(-gScale*v)), this.graphStyle));
+				}
+				var p=new DrawingLib.PrimitivePolygon(this.graphStyle);
+				p.addVertex(p0);
+				p.addVertex(p0.plusNew(perp.multiplyNew(-gScale*this.internal_forces[i].M0)));
+				p.addVertex(p1.plusNew(perp.multiplyNew(-gScale*this.internal_forces[i].M1)));
+				p.addVertex(p1);
+				dr.add(p);
+			}			
+			return dr;
+		};
+		
+		Frame2DResult.prototype.getNormalForceGraph=function()
+		{
+			var gScale=0.01;
+			var hairDistance=0.05;
+			var dr=new DrawingLib.SVGDrawing();
+			//rods
+			for(var i=0; i<this.rods.length; i++)
+			{
+				var p0=this.getNodeAsVector(this.rods[i].lower_node_index);
+				var p1=this.getNodeAsVector(this.rods[i].higher_node_index);
+				dr.add(new DrawingLib.PrimitiveLine(p0, p1, this.rodStyle));
+			}
+			dr.scaleContentToBox();
+			for(var i=0; i<this.rods.length; i++)
+			{
+				var p0=this.getNodeAsVector(this.rods[i].lower_node_index);
+				var p1=this.getNodeAsVector(this.rods[i].higher_node_index);
+				var perp=p1.minusNew(p0).rotateNew(new TwoDGeometry.Vector(0, 1)).unitVector();
+				var l=p1.minusNew(p0).getLength();
+				var n=Math.ceil(l/hairDistance);
+				for(var j=1; j<n; j++)
+				{
+					var v=this.internal_forces[i].N0;
+					var pj=p0.plusNew(p1.minusNew(p0).multiplyNew(j/n));
+					dr.add(new DrawingLib.PrimitiveLine(pj, pj.plusNew(perp.multiplyNew(-gScale*v)), this.graphStyle));
+				}
+				var p=new DrawingLib.PrimitivePolygon(this.graphStyle);
+				p.addVertex(p0);
+				p.addVertex(p0.plusNew(perp.multiplyNew(-gScale*this.internal_forces[i].N0)));
+				p.addVertex(p1.plusNew(perp.multiplyNew(-gScale*this.internal_forces[i].N0)));
+				p.addVertex(p1);
+				dr.add(p);
+			}			
+			return dr;
+		};
+		
+		Frame2DResult.prototype.getDisplacementGraph=function()
+		{
+			var gScale=50;
+			var dr=new DrawingLib.SVGDrawing();
+			//rods
+			for(var i=0; i<this.rods.length; i++)
+			{
+				var p0=this.getNodeAsVector(this.rods[i].lower_node_index);
+				var p1=this.getNodeAsVector(this.rods[i].higher_node_index);
+				dr.add(new DrawingLib.PrimitiveLine(p0, p1, this.graphStyle));
+			}
+			//dr.scaleContentToBox();
+			for(var i=0; i<this.rods.length; i++)
+			{
+				var p0=this.getNodeAsVector(this.rods[i].lower_node_index).plusNew(this.getDisplacementAsVector(this.rods[i].lower_node_index).multiplyNew(gScale));
+				var p1=this.getNodeAsVector(this.rods[i].higher_node_index).plusNew(this.getDisplacementAsVector(this.rods[i].higher_node_index).multiplyNew(gScale));
+				dr.add(new DrawingLib.PrimitiveLine(p0, p1, this.rodStyle));
+			}			
+			return dr;
+		};
+		
+
+		</script>
+	</head>
+	<body>
+		<script>
+		//console.log("----------------");
+		//for(key in DrawingLib.PrimitivePolygon.prototype)
+		//{
+		//	console.log(key+": "+DrawingLib.PrimitivePolygon.prototype[key]);
+		//}
+		//console.log("----------------");
+		
+		//this does the trick
+		Object.setPrototypeOf(project, Frame2DResult.prototype);
+		var skelet=project.getSystemOverview();
+		skelet.scaleBoxToContent(200);
+		document.body.appendChild(skelet.getDOMObject());
+		
+		var mg=project.getBendingMomentGraph();
+		mg.scaleBoxToContent(200);
+		document.body.appendChild(mg.getDOMObject());
+		
+		var ng=project.getNormalForceGraph();
+		ng.scaleBoxToContent(200);
+		document.body.appendChild(ng.getDOMObject());
+		
+		var dg=project.getDisplacementGraph();
+		dg.scaleBoxToContent(200);
+		document.body.appendChild(dg.getDOMObject());
+		
+		/*var ls=
+		{
+			stroke: "#ff0000", 
+			stroke_width: 1,
+			fill: "none"
+		};
+		
+		var fs=
+		{
+			stroke: "none", 
+			fill: "#000000"
+		};
+		
+		var ts=
+		{
+			stroke: "none", 
+			fill: "#00ff00",
+			font_size: "10",
+			font_family: "sans-serif"
+		};
+		
+		var dr=new DrawingLib.SVGDrawing();
+		dr.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(-20,-20), new TwoDGeometry.Vector(50,50), ls));
+		dr.add(new DrawingLib.PrimitiveLine(new TwoDGeometry.Vector(0,50), new TwoDGeometry.Vector(50,0), ls));
+		dr.addLine(50, 0, 50, 50, ls);
+		dr.add(new DrawingLib.PrimitiveCircle(new TwoDGeometry.Vector(30,10), 40, ls));
+		dr.addCircle(30, 10, 20, ls).plusThis(TwoDGeometry.Vector(0, -15));
+		
+		var p=new DrawingLib.PrimitivePolygon(fs);
+		p.addVertex(new TwoDGeometry.Vector(0, 0));
+		p.addVertex(new TwoDGeometry.Vector(5, 10));
+		p.addVertex(new TwoDGeometry.Vector(1, 7));
+		p.addVertex(new TwoDGeometry.Vector(1, 40));
+		p.addVertex(new TwoDGeometry.Vector(-1, 40));
+		p.addVertex(new TwoDGeometry.Vector(-1, 7));
+		p.addVertex(new TwoDGeometry.Vector(-5, 10));
+		p.plusThis(new TwoDGeometry.Vector(60, 0));
+		p.rotateThis(new TwoDGeometry.Vector(1, 0.4));
+		dr.add(p);
+		
+		//dr.addPolygon([0, 0, 10, 0, 10, 10, 0, 10], fs).rotateThis(new TwoDGeometry.Vector(1, 1));
+		
+		dr.add(new DrawingLib.PrimitivePoint(new TwoDGeometry.Vector(0, 0), ls));
+		//dr.addPoint(0, 0, ls);
+		
+		dr.add(new DrawingLib.PrimitiveText(new TwoDGeometry.Vector(25, 25), Math.PI/3, "Hello", ts));
+		dr.addText(25, 0, 0, "Bello", ts);
+		//dr.scaleContentToBox();
+		//dr.scaleBoxToContent(2);
+		dr.scaleToDiameter(300);
+		document.body.appendChild(dr.getDOMObject());*/
+
+		</script>
+	</body>
+</html>

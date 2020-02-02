@@ -1,0 +1,429 @@
+﻿<!DOCTYPE html>
+<html  xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<title>Cross Section Library</title>
+		<script src="TwoDGeometry.js" type="text/javascript"></script>
+		<script src="CrossSectionLib.js" type="text/javascript"></script>
+		<script>
+//========================================
+// ENG_FORMAT
+//========================================
+
+function pre_format_number(x)
+{
+	this.decimal_sign=x>=0?"":"-";
+	var xabs=Math.abs(x);
+	if(xabs<10e-9)
+	{
+		this.decimal_part="0,000";
+		this.exponent=0;
+	}
+	else
+	{
+		//var b=Math.floor(Math.log10(xabs));
+		var b=Math.floor(Math.log(xabs)/Math.LN10);
+		var a=xabs/Math.pow(10,b);
+		var n=a<2?4:3;
+		a=Math.round(a*Math.pow(10, n-1))/(Math.pow(10, n-1));
+		if(b>6 || b<-5) // scientific notation shall be used
+		{
+			//console.log(x);
+			this.decimal_part=a.toString();
+			this.exponent=b;
+		}
+		else // decimal form shall be used
+		{
+			this.decimal_part=(a*Math.pow(10,b)).toFixed(b>(n-1)?0:-b+n-1);
+			this.exponent=0;
+		}
+	}
+}
+
+function eng_format_plain(x)
+//x: double
+{
+	var pf=new pre_format_number(x);
+	var res=pf.decimal_sign+pf.decimal_part;
+	if(pf.exponent!=0) res+=" * 10 ^ "+pf.exponent;
+	return res;
+}
+
+function eng_format_mathml_string(x)
+//x: double
+{
+	var pf=new pre_format_number(x);
+	var res="";
+	if(pf.decimal_sign.length>0) res+="<mo>"+pf.decimal_sign+"</mo>";
+	tes+="<mn>"+pf.decimal_part+"</mn>";
+	if(pf.exponent!=0) res+="<msup><mn>10</mn><mn>"+pf.exponent+"</mn></msup>";
+	return res;
+}
+
+function eng_format_html_string(x)
+//x: double
+{
+	var pf=new pre_format_number(x);
+	var res="";
+	if(pf.decimal_sign.length>0) res+="-";
+	res+=pf.decimal_part;
+	if(pf.exponent!=0) res+="&cdot;10<sup>"+pf.exponent+"</sup>";
+	return res;
+}
+     
+        
+//=================================        
+//a kezelőfelület függvényei
+function cs_change(e)
+{
+    var denominator=document.getElementById("denominator");
+    denominator.value=e.target.value;
+    go_now(e.target.value);
+}
+
+function dn_change(e)
+{
+    go_now(e.target.value);
+}
+
+function go_now(spruch)
+{
+    var error_box=document.getElementById("error_box");
+    var graphics_box=document.getElementById("graphics_box");
+    var properties_box=document.getElementById("properties_box");
+    error_box.textContent="";
+	while(graphics_box.childNodes.length>0)
+	{
+		graphics_box.removeChild(graphics_box.lastChild);
+	}
+	while(properties_box.childNodes.length>0)
+	{
+		properties_box.removeChild(properties_box.lastChild);
+	}
+	//try
+	//{
+		var cs=new CrossSectionLib.CrossSectionByDenomination(spruch);
+		graphics_box.appendChild(cs.getSVGObject());
+		var p=cs.getBasicCrossSectionProperties();
+        var bb=cs.contour.getBoundingBox();
+        var div;
+        div=document.createElement("div");
+        div.innerHTML="h = "+eng_format_html_string(bb.getHeight())+" mm";
+        properties_box.appendChild(div);
+        div=document.createElement("div");
+        div.innerHTML="b = "+eng_format_html_string(bb.getWidth())+" mm";
+        properties_box.appendChild(div);
+        div=document.createElement("div");
+        div.innerHTML="A = "+eng_format_html_string(p.A/100)+" cm<sup>2</sup>";
+        properties_box.appendChild(div);
+        div=document.createElement("div");
+        div.innerHTML="I<sub>y</sub> = "+eng_format_html_string(p.Ix/10000)+" cm<sup>4</sup>";
+        properties_box.appendChild(div);
+        div=document.createElement("div");
+        div.innerHTML="<span>W<sub>el,y</sub></span><sup>+</sup> = "+eng_format_html_string(p.Ix/bb.p1.y/1000)+" cm<sup>3</sup>";
+        properties_box.appendChild(div);
+        div=document.createElement("div");
+        div.innerHTML="<span>W<sub>el,y</sub></span><sup>-</sup> = "+eng_format_html_string(p.Ix/bb.p0.y/1000)+" cm<sup>3</sup>";
+        properties_box.appendChild(div);
+        div=document.createElement("div");
+        div.innerHTML="<span>W<sub>pl,y</sub></span><sup>+</sup> = "+eng_format_html_string(p.Wplxp/1000)+" cm<sup>3</sup>";
+        properties_box.appendChild(div);
+        div=document.createElement("div");
+        div.innerHTML="<span>W<sub>pl,y</sub></span><sup>-</sup> = "+eng_format_html_string(p.Wplxn/1000)+" cm<sup>3</sup>";
+        properties_box.appendChild(div);
+        div=document.createElement("div");
+        div.innerHTML="I<sub>z</sub> = "+eng_format_html_string(p.Iy/10000)+" cm<sup>4</sup>";
+        properties_box.appendChild(div);
+        div=document.createElement("div");
+        div.innerHTML="<span>W<sub>el,z</sub></span><sup>+</sup> = "+eng_format_html_string(p.Iy/bb.p1.x/1000)+" cm<sup>3</sup>";
+        properties_box.appendChild(div);
+        div=document.createElement("div");
+        div.innerHTML="<span>W<sub>el,z</sub></span><sup>-</sup> = "+eng_format_html_string(p.Iy/bb.p0.x/1000)+" cm<sup>3</sup>";
+        properties_box.appendChild(div);
+        div=document.createElement("div");
+        div.innerHTML="<span>W<sub>pl,z</sub></span><sup>+</sup> = "+eng_format_html_string(p.Wplyp/1000)+" cm<sup>3</sup>";
+        properties_box.appendChild(div);
+        div=document.createElement("div");
+        div.innerHTML="<span>W<sub>pl,z</sub></span><sup>-</sup> = "+eng_format_html_string(p.Wplyn/1000)+" cm<sup>3</sup>";
+        properties_box.appendChild(div);
+		if(cs.It!=undefined)
+		{
+			div=document.createElement("div");
+			div.innerHTML="I<sub>t</sub> = "+eng_format_html_string(cs.It/10000)+" cm<sup>4</sup>";
+			properties_box.appendChild(div);
+		}
+		if(cs.alphay!=undefined && cs.alphay!=null);
+		{
+			div=document.createElement("div");
+			div.innerHTML="α<sub>y</sub> = "+cs.alphay;
+			properties_box.appendChild(div);
+		}
+		if(cs.alphaz!=undefined && cs.alphaz!=null);
+		{
+			div=document.createElement("div");
+			div.innerHTML="α<sub>z</sub> = "+cs.alphaz;
+			properties_box.appendChild(div);
+		}
+		div=document.createElement("div");
+        div.innerHTML="Class = "+cs.classifySimple(1);
+        properties_box.appendChild(div);
+    //}
+	//catch(err)
+	//{
+		//error_box.textContent=err;
+	//}
+}
+		</script>
+	</head>
+	<body>
+		<h3>Cross Section</h3>
+		<input type="text" name="denominator" id="denominator" onchange="dn_change(event);"/>
+		<select name="cs_select" id="cs_select" onchange="cs_change(event);">
+			<optgroup label="flat steel b/h"></optgroup>
+            <optgroup label="round bar d"></optgroup>
+            <optgroup label="pipe d/t"></optgroup>
+            <optgroup label="IPE">
+				<option>IPE80</option>
+				<option>IPE100</option>
+				<option>IPE120</option>
+				<option>IPE160</option>
+                <option>IPE180</option>
+                <option>IPE200</option>
+                <option>IPE220</option>
+                <option>IPE240</option>
+                <option>IPE270</option>
+                <option>IPE300</option>
+                <option>IPE330</option>
+                <option>IPE360</option>
+                <option>IPE400</option>
+                <option>IPE450</option>
+                <option>IPE500</option>
+                <option>IPE550</option>
+                <option>IPE600</option>
+			</optgroup>
+            <optgroup label="HEA">
+				<option>HEA100</option>
+				<option>HEA120</option>
+				<option>HEA140</option>
+				<option>HEA160</option>
+				<option>HEA180</option>
+				<option>HEA200</option>
+				<option>HEA220</option>
+				<option>HEA240</option>
+				<option>HEA260</option>
+				<option>HEA280</option>
+				<option>HEA300</option>
+				<option>HEA320</option>
+				<option>HEA340</option>
+				<option>HEA360</option>
+				<option>HEA400</option>
+				<option>HEA450</option>
+				<option>HEA500</option>
+				<option>HEA550</option>
+				<option>HEA600</option>
+				<option>HEA650</option>
+				<option>HEA700</option>
+				<option>HEA800</option>
+				<option>HEA900</option>
+				<option>HEA1000</option>
+			</optgroup>
+            <optgroup label="HEB">
+				<option>HEB100</option>
+				<option>HEB120</option>
+				<option>HEB140</option>
+				<option>HEB160</option>
+				<option>HEB180</option>
+				<option>HEB200</option>
+				<option>HEB220</option>
+				<option>HEB240</option>
+				<option>HEB260</option>
+				<option>HEB280</option>
+				<option>HEB300</option>
+				<option>HEB320</option>
+				<option>HEB340</option>
+				<option>HEB360</option>
+				<option>HEB400</option>
+				<option>HEB450</option>
+				<option>HEB500</option>
+				<option>HEB550</option>
+				<option>HEB600</option>
+				<option>HEB650</option>
+				<option>HEB700</option>
+				<option>HEB800</option>
+				<option>HEB900</option>
+				<option>HEB1000</option>
+			</optgroup>
+            <optgroup label="HEM">
+				<option>HEM100</option>
+				<option>HEM120</option>
+				<option>HEM140</option>
+				<option>HEM160</option>
+				<option>HEM180</option>
+				<option>HEM200</option>
+				<option>HEM220</option>
+				<option>HEM240</option>
+				<option>HEM260</option>
+				<option>HEM280</option>
+				<option>HEM300</option>
+				<option>HEM320</option>
+				<option>HEM340</option>
+				<option>HEM360</option>
+				<option>HEM400</option>
+				<option>HEM450</option>
+				<option>HEM500</option>
+				<option>HEM550</option>
+				<option>HEM600</option>
+				<option>HEM650</option>
+				<option>HEM700</option>
+				<option>HEM800</option>
+				<option>HEM900</option>
+				<option>HEM1000</option>
+			</optgroup>
+			<optgroup label="UNP">
+				<option>UNP30x15</option>
+                <option>UNP30</option>
+				<option>UNP40</option>
+                <option>UNP40x20</option>
+				<option>UNP50</option>
+                <option>UNP50x25</option>
+				<option>UNP60</option>
+                <option>UNP65</option>
+                <option>UNP80</option>
+                <option>UNP100</option>
+                <option>UNP120</option>
+                <option>UNP140</option>
+                <option>UNP160</option>
+                <option>UNP180</option>
+                <option>UNP200</option>
+                <option>UNP220</option>
+                <option>UNP240</option>
+                <option>UNP260</option>
+                <option>UNP280</option>
+                <option>UNP300</option>
+                <option>UNP320</option>
+                <option>UNP350</option>
+                <option>UNP380</option>
+                <option>UNP400</option>
+			</optgroup>
+            <optgroup label="L">
+                <option>Lw20x20x3</option>
+                <option>Lw25x25x3</option>
+                <option>Lw25x25x4</option>
+                <option>Lw30x30x3</option>
+                <option>Lw30x30x4</option>
+                <option>Lw35x35x4</option>
+                <option>Lw40x40x4</option>
+                <option>Lw40x40x5</option>
+                <option>Lw45x45x4,5</option>
+                <option>Lw50x50x4</option>
+                <option>Lw50x50x5</option>
+                <option>Lw50x50x6</option>
+                <option>Lw60x60x5</option>
+                <option>Lw60x60x6</option>
+                <option>Lw60x60x8</option>
+                <option>Lw65x65x7</option>
+                <option>Lw70x70x6</option>
+                <option>Lw70x70x7</option>
+                <option>Lw75x75x6</option>
+                <option>Lw75x75x8</option>
+                <option>Lw80x80x8</option>
+                <option>Lw80x80x10</option>
+                <option>Lw90x90x7</option>
+                <option>Lw90x90x8</option>
+                <option>Lw90x90x9</option>
+                <option>Lw90x90x10</option>
+                <option>Lw100x100x8</option>
+                <option>Lw100x100x10</option>
+                <option>Lw100x100x12</option>
+                <option>Lw120x120x10</option>
+                <option>Lw120x120x12</option>
+                <option>Lw130x130x12</option>
+                <option>Lw150x150x10</option>
+                <option>Lw150x150x12</option>
+                <option>Lw150x150x15</option>
+                <option>Lw160x160x15</option>
+                <option>Lw180x180x16</option>
+                <option>Lw180x180x18</option>
+                <option>Lw200x200x16</option>
+                <option>Lw200x200x18</option>
+                <option>Lw200x200x20</option>
+                <option>Lw200x200x24</option>
+                <option>Lw250x250x28</option>
+                <option>Lw250x250x35</option>
+                <option>Lw40x20x4</option>
+                <option>Lw40x25x4</option>
+                <option>Lw45x30x4</option>
+                <option>Lw50x30x5</option>
+                <option>Lw60x30x5</option>
+                <option>Lw60x40x5</option>
+                <option>Lw60x40x6</option>
+                <option>Lw65x50x5</option>
+                <option>Lw70x50x6</option>
+                <option>Lw75x50x6</option>
+                <option>Lw75x50x8</option>
+                <option>Lw80x40x6</option>
+                <option>Lw80x40x8</option>
+                <option>Lw80x60x7</option>
+                <option>Lw100x50x6</option>
+                <option>Lw100x50x8</option>
+                <option>Lw100x65x7</option>
+                <option>Lw100x65x8</option>
+                <option>Lw100x65x10</option>
+                <option>Lw100x75x8</option>
+                <option>Lw100x75x10</option>
+                <option>Lw100x75x12</option>
+                <option>Lw120x80x8</option>
+                <option>Lw120x80x10</option>
+                <option>Lw120x80x12</option>
+                <option>Lw125x75x8</option>
+                <option>Lw125x75x10</option>
+                <option>Lw125x75x12</option>
+                <option>Lw135x65x8</option>
+                <option>Lw135x65x10</option>
+                <option>Lw150x75x9</option>
+                <option>Lw150x75x10</option>
+                <option>Lw150x75x12</option>
+                <option>Lw150x75x15</option>
+                <option>Lw150x90x10</option>
+                <option>Lw150x90x12</option>
+                <option>Lw150x90x15</option>
+                <option>Lw150x100x10</option>
+                <option>Lw150x100x12</option>
+                <option>Lw200x100x10</option>
+                <option>Lw200x100x12</option>
+                <option>Lw200x100x15</option>
+                <option>Lw200x150x12</option>
+                <option>Lw200x150x15</option>
+            </optgroup>
+            <optgroup label="T">
+                <option>T30</option>
+                <option>T35</option>
+                <option>T40</option>
+                <option>T50</option>
+                <option>T60</option>
+                <option>T70</option>
+                <option>T80</option>
+                <option>T100</option>
+                <option>T120</option>
+                <option>T140</option>    
+            </optgroup>
+            <optgroup label="Z">
+                <option>Z30</option> 
+                <option>Z40</option> 
+                <option>Z50</option> 
+                <option>Z60</option> 
+                <option>Z80</option> 
+                <option>Z100</option> 
+                <option>Z120</option> 
+                <option>Z140</option> 
+                <option>Z160</option> 
+            </optgroup>
+		</select>
+        <div id="error_box" style="color: red;"></div>
+        <table>
+        <tr>
+        <td id="graphics_box"></td>
+        <td id="properties_box" style="vertical-align: top;"></td>
+        </tr>
+        </table>
+	</body>
+</html>

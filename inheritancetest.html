@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Object test</title>
+	</head>
+	<body>
+		<script>
+		
+
+
+var o1=
+{
+	x: 5,
+	y: 6
+};
+
+//var o2=Object.create(o1, {z:{writable: true, configurable: true, enumerable: true, value: 7}});
+var o2=Object.create(o1, {z:{value: 7}});
+o2.z=8;
+
+console.log(Object.getPrototypeOf(o2));
+console.log(o2.z);
+for(key in o2)
+{
+	console.log(key+": "+o2[key]);
+}
+		</script>
+	</body>
+</html>
